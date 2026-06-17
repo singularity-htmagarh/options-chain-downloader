@@ -1,0 +1,6 @@
+2026-06-17 00:20:41,643 [INFO] === Starting options chain download for 2026-06-17 (2 tickers) ===
+2026-06-17 00:20:41,686 [INFO] Fetching SPY ...
+2026-06-17 00:20:51,307 [INFO] SPY: 801 rows saved (2 expirations)
+2026-06-17 00:20:52,809 [INFO] Fetching AAPL ...
+2026-06-17 00:20:54,208 [INFO] AAPL: 290 rows saved (2 expirations)
+2026-06-17 00:20:55,710 [INFO] === Done. 1091 total rows saved. Failures: none ===

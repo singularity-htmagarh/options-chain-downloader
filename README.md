@@ -90,22 +90,18 @@ python3 check_data.py
 ```
 
 ### 2. Set up cron
-
 Find your Python path:
-
 ```bash
 realpath venv/bin/python3
 pwd
 ```
 
 Open crontab:
-
 ```bash
 crontab -e
 ```
 
 Add a line (example: 6 PM ET weekdays, adjust for your timezone):
-
 ```cron
 0 22 * * 1-5 TZ='America/New_York' cd /path/to/options_downloader && /path/to/venv/bin/python3 download_options_chain.py >> cron.log 2>&1
 ```
