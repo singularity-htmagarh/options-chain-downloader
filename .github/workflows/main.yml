@@ -86,7 +86,7 @@ jobs:
 
       - name: Upload log as artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: options-downloader-log
           path: options_downloader.log
