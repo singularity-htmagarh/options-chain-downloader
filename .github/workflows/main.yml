@@ -1,0 +1,102 @@
+name: Daily Options Chain Download
+
+# ============================================================================
+# CRON SCHEDULE (edit the 'schedule' section below to change when it runs)
+# ============================================================================
+# Cron syntax: minute hour day-of-month month day-of-week
+# Examples:
+#   4 PM ET weekdays:        0 21 * * 1-5  (UTC, accounting for EDT)
+#   6 PM ET weekdays:        0 22 * * 1-5  (UTC, accounting for EDT)
+#   3 PM ET weekdays:        0 20 * * 1-5  (UTC, accounting for EDT)
+#   Daily at 12 AM UTC:      0 0 * * *
+#
+# Important: GitHub Actions runners are in UTC. Adjust your hour for your
+# timezone. US Market close is 4 PM ET (20:00 UTC during EDT / 21:00 during EST).
+# ============================================================================
+
+on:
+  schedule:
+    # Run at 9 PM UTC on weekdays (4 PM ET / 3 PM CT during EDT)
+    # Adjust this cron to match your desired time
+    - cron: '0 21 * * 1-5'
+
+  # Uncomment below to allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+  # Uncomment below to run on every push (useful for testing)
+  # push:
+  #   branches:
+  #     - main
+
+jobs:
+  download-options:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run options chain downloader
+        id: download
+        run: |
+          python download_options_chain.py
+          echo "status=completed" >> $GITHUB_OUTPUT
+
+      - name: Check if data was downloaded
+        id: check
+        run: |
+          if [ -f "options_data.db" ]; then
+            echo "db_exists=true" >> $GITHUB_OUTPUT
+            ls -lh options_data.db
+            find csv_backups -type f | wc -l
+          else
+            echo "db_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.check.outputs.db_exists == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Stage all changes
+          git add -A
+          
+          # Check if there are changes to commit
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: update options chain data - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git push origin HEAD:${{ github.ref }}
+          fi
+
+      - name: Upload log as artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: options-downloader-log
+          path: options_downloader.log
+          retention-days: 7
+
+      - name: Report status
+        if: always()
+        run: |
+          echo "Workflow completed with status: ${{ job.status }}"
+          if [ -f "options_downloader.log" ]; then
+            echo "--- Recent log entries ---"
+            tail -20 options_downloader.log
+          fi
