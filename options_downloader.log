@@ -42,3 +42,25 @@
 2026-06-17 04:37:16,562 [INFO] Fetching LLY ...
 2026-06-17 04:37:19,617 [INFO] LLY: 1209 rows saved (6 expirations)
 2026-06-17 04:37:21,118 [INFO] === Done. 18823 total rows saved. Failures: ^DJI ===
+2026-06-17 21:40:22,622 [INFO] === Starting options chain download for 2026-06-17 (18 tickers) ===
+2026-06-17 21:40:22,622 [INFO] ^SPX: already have today's data, skipping
+2026-06-17 21:40:22,622 [INFO] ^NDX: already have today's data, skipping
+2026-06-17 21:40:22,623 [INFO] ^RUT: already have today's data, skipping
+2026-06-17 21:40:22,623 [INFO] Fetching ^DJI ...
+2026-06-17 21:40:22,907 [WARNING] No options listed for ^DJI
+2026-06-17 21:40:22,907 [WARNING] ^DJI: no data returned
+2026-06-17 21:40:24,407 [INFO] SPY: already have today's data, skipping
+2026-06-17 21:40:24,408 [INFO] QQQ: already have today's data, skipping
+2026-06-17 21:40:24,408 [INFO] IWM: already have today's data, skipping
+2026-06-17 21:40:24,408 [INFO] DIA: already have today's data, skipping
+2026-06-17 21:40:24,408 [INFO] AAPL: already have today's data, skipping
+2026-06-17 21:40:24,408 [INFO] MSFT: already have today's data, skipping
+2026-06-17 21:40:24,408 [INFO] GOOGL: already have today's data, skipping
+2026-06-17 21:40:24,408 [INFO] AMZN: already have today's data, skipping
+2026-06-17 21:40:24,408 [INFO] NVDA: already have today's data, skipping
+2026-06-17 21:40:24,408 [INFO] META: already have today's data, skipping
+2026-06-17 21:40:24,408 [INFO] TSLA: already have today's data, skipping
+2026-06-17 21:40:24,408 [INFO] BRK-B: already have today's data, skipping
+2026-06-17 21:40:24,409 [INFO] AVGO: already have today's data, skipping
+2026-06-17 21:40:24,409 [INFO] LLY: already have today's data, skipping
+2026-06-17 21:40:24,409 [INFO] === Done. 0 total rows saved. Failures: ^DJI ===
