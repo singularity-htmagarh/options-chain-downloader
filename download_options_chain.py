@@ -93,9 +93,54 @@ def categorize(ticker: str) -> str:
 
 
 def init_db(conn: sqlite3.Connection) -> None:
+    # Legacy helper left in place; callers should create per-run tables via
+    # `create_run_table(conn, table_name)` below.
+    return None
+
+
+def get_table_name(snapshot_date: str) -> str:
+    """Return a safe per-run table name for the given snapshot_date.
+
+    Example: snapshot_date '2026-06-18' -> 'options_chain_20260618'
+    """
+    return f"options_chain_{snapshot_date.replace('-', '')}"
+
+
+def create_master_index(conn: sqlite3.Connection) -> None:
+    """Create a small master index table mapping snapshot_date -> table_name."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS runs_index (
+            snapshot_date TEXT PRIMARY KEY,
+            table_name    TEXT UNIQUE,
+            created_at    TEXT
+        )
+        """
+    )
+    conn.commit()
+
+
+def register_run(conn: sqlite3.Connection, snapshot_date: str, table_name: str) -> None:
+    """Register the run in `runs_index` if not already present."""
+    from datetime import datetime
+
+    conn.execute(
+        "INSERT OR IGNORE INTO runs_index (snapshot_date, table_name, created_at) VALUES (?, ?, ?)",
+        (snapshot_date, table_name, datetime.utcnow().isoformat()),
+    )
+    conn.commit()
+
+
+def list_runs(conn: sqlite3.Connection):
+    """Return list of (snapshot_date, table_name, created_at) rows from runs_index."""
+    cur = conn.execute("SELECT snapshot_date, table_name, created_at FROM runs_index ORDER BY snapshot_date DESC")
+    return cur.fetchall()
+
+
+def create_run_table(conn: sqlite3.Connection, table_name: str) -> None:
     conn.execute(
         f"""
-        CREATE TABLE IF NOT EXISTS options_chain (
+        CREATE TABLE IF NOT EXISTS {table_name} (
             snapshot_date     TEXT NOT NULL,
             ticker            TEXT NOT NULL,
             category          TEXT,
@@ -117,17 +162,28 @@ def init_db(conn: sqlite3.Connection) -> None:
         )
         """
     )
+    # create a lookup index for the per-run table
+    idx_name = f"idx_{table_name}_lookup"
     conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_chain_lookup "
-        "ON options_chain (ticker, snapshot_date, expiration)"
+        f"CREATE INDEX IF NOT EXISTS {idx_name} "
+        f"ON {table_name} (ticker, snapshot_date, expiration)"
     )
     conn.commit()
 
 
 def already_downloaded(conn: sqlite3.Connection, ticker: str, snapshot_date: str) -> bool:
+    """Return True if the given ticker already has rows in the per-run table."""
+    table_name = get_table_name(snapshot_date)
     cur = conn.execute(
-        "SELECT 1 FROM options_chain WHERE ticker = ? AND snapshot_date = ? LIMIT 1",
-        (ticker, snapshot_date),
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        (table_name,),
+    )
+    if cur.fetchone() is None:
+        return False
+
+    cur = conn.execute(
+        f"SELECT 1 FROM {table_name} WHERE ticker = ? LIMIT 1",
+        (ticker,),
     )
     return cur.fetchone() is not None
 
@@ -235,7 +291,11 @@ def main() -> None:
 
     CSV_BACKUP_DIR.mkdir(exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
-    init_db(conn)
+    # create the master index and the per-run table for this snapshot
+    create_master_index(conn)
+    table_name = get_table_name(snapshot_date)
+    create_run_table(conn, table_name)
+    register_run(conn, snapshot_date, table_name)
 
     total_rows = 0
     failures = []
@@ -255,7 +315,7 @@ def main() -> None:
             continue
 
         try:
-            df.to_sql("options_chain", conn, if_exists="append", index=False)
+            df.to_sql(table_name, conn, if_exists="append", index=False)
         except sqlite3.IntegrityError as exc:
             log.warning("%s: some rows already existed, partial insert skipped (%s)", ticker, exc)
 
